@@ -1,7 +1,7 @@
-<tool id="fastqc" name="FastQC" version="0.63">
+<tool id="fastqc" name="FastQC" version="0.64">
     <description>Read Quality reports</description>
     <requirements>
-        <requirement type="package" version="0.11.2">FastQC</requirement>
+        <requirement type="package" version="0.11.4">FastQC</requirement>
     </requirements>
     <stdio>
         <exit_code range="1:" />
@@ -9,21 +9,61 @@
         <regex match="Error:" />
         <regex match="Exception:" />
     </stdio>
-    <command interpreter="python">
-    rgFastQC.py
-        -i "$input_file"
-        -d "$html_file.files_path"
-        -o "$html_file"
-        -t "$text_file"
-        -f "$input_file.ext"
-        -j "$input_file.name"
-        -e "\$FASTQC_JAR_PATH/fastqc"
-        #if $contaminants.dataset and str($contaminants) > ''
-            -c "$contaminants"
+    <command><![CDATA[
+        ## fastqc removes .fastq and .fq file extensions of input files.
+        ## This is essential if Galaxy provides links to files (with real extensions)
+        ## but that behaviour is causing an inconsistency in output filenaming.
+        ## We work around this by linking every file to cwd without file extension
+
+        #if $input_file.metadata.is_gzipped
+            ln -s "${input_file}" ./input_single_file.gz;
+        #else
+            ln -s "${input_file}" ./input_single_file;
         #end if
-        #if $limits.dataset and str($limits) > ''
-            -l "$limits"
+
+        #if $contaminants.metadata.is_gzipped
+            ln -s "$contaminants" ./contaminants.gz;
+        #else
+           ln -s "$contaminants" ./contaminants;
         #end if
+
+        #if $limits.metadata.is_gzipped
+            ln -s "$limits" ./limits.gz;
+        #else
+            ln -s "$limits" ./limits;
+        #end if
+
+        python $__tool_directory__/rgFastQC.py
+            #if $input_file.metadata.is_gzipped
+                -i ./input_single_file.gz
+            #else
+                -i ./input_single_file
+            #end if
+            -d "$html_file.files_path"
+            -o "$html_file"
+            -t "$text_file"
+            -f "$input_file.ext"
+            #if $input_file.metadata.is_gzipped
+                -j "input_single_file.gz"
+            #else
+                -j "input_single_file"
+            #end if
+            -e "\$FASTQC_JAR_PATH/fastqc"
+            #if $contaminants.dataset and str($contaminants) > ''
+                #if $contaminants.dataset.metadata.is_gzipped
+                    -c ./contaminants.gz
+                #else
+                    -c ./contaminants
+                #end if
+            #end if
+            #if $limits.dataset and str($limits) > ''
+                #if $limits.dataset.metadata.is_gzipped
+                    -l ./limits.gz
+                #else
+                    -l ./limits
+                #end if
+            #end if
+        ]]>
     </command>
     <inputs>
         <param format="fastqsanger,fastq,bam,sam" name="input_file" type="data" label="Short read data from your current history" />
