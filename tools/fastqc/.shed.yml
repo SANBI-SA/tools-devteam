@@ -1,4 +1,6 @@
 # repository published to https://toolshed.g2.bx.psu.edu/repos/devteam/fastqc
-owner: devteam
-name: fastqc
+categories: [Fastq Manipulation]
+description: A fastqc tool wrapper, customised to handle gzipped fastq datasets
+owner: sanbi-uwc
+name: sanbi_fastqc
     
